@@ -1,0 +1,47 @@
+menu "Zeldy configurations "
+
+config WIFI_SSID
+    string "WiFi SSID"
+	default "myssid"
+	help
+		SSID (network name) for the example to connect to.
+
+config WIFI_PASSWORD
+    string "WiFi Password"
+	default "mypassword"
+	help
+		WiFi password (WPA or WPA2) for the example to use.
+
+		Can be left blank if the network has no security set.
+
+config DB_USER
+    string "Database username"
+    default "user"
+    help
+        You figure it out
+
+config DB_PASS
+    string "Database password for logging"
+    default "pass"
+    help
+        You figure it out again
+
+config DB_TARGET
+    string "Target DB name"
+    default "zeldy_db"
+    help
+        "Default DB name we will be targetting in querry"
+
+config DB_DATA_CURRENT
+    string "DB datapoint for current measurement"
+    default "current"
+    help
+        "DB current data point, type float 64"
+
+config DB_ADDRESS
+    string "Address to query DB"
+    default "http://127.0.0.1:8086"
+    help
+        "default db address is http://127.0.0.1:8086"
+
+endmenu

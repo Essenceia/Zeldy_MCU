@@ -6,3 +6,5 @@ cmake-build-debug/**
 cmake-build-debug/
 build/
 build/**
+.idea/
+.idea/**

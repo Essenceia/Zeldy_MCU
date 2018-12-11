@@ -82,10 +82,12 @@ CONFIG_MONITOR_BAUD_OTHER_VAL=115200
 CONFIG_MONITOR_BAUD=115200
 
 #
-# Example Configuration
+# Zeldy configurations 
 #
-CONFIG_WIFI_SSID="suus3"
-CONFIG_WIFI_PASSWORD="suusbrowny"
+CONFIG_WIFI_SSID="heel"
+CONFIG_WIFI_PASSWORD="mypassword"
+CONFIG_DB_USER="user"
+CONFIG_DB_PASS="pass"
 
 #
 # Partition Table
