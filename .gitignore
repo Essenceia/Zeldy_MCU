@@ -1,0 +1,8 @@
+esp_http_client_test.py
+sdkconfig.old
+server.py
+.gitignore
+cmake-build-debug/**
+cmake-build-debug/
+build/
+build/**
