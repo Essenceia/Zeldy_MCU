@@ -8,6 +8,7 @@ services:
       - 'grafana-variables.env'
     volumes:
       - '/var/lib/grafana'
+    restart: 'always'
     
   influxdb:
     image: 'influxdb:latest'
@@ -17,3 +18,4 @@ services:
       - 'influxdb-variables.env'
     volumes:
       - '/var/lib/influxdb'
+    restart: 'always'
