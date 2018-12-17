@@ -4,27 +4,31 @@
 
 #include "influxdb.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "config_db.h"
 
+#include "esp_log.h"
+
+#define TAG "InfluxDB"
 /**
  * Persistent hidden object for post requests
  */
-influxdb_post_s *db_post;
+static influxdb_post_s *db_post;
 
-influx_db_data_s *new_measurement(string name, influx_db_mesurement_value val, FIELD_VALUES_TYPES_E type) {
-    influx_db_data_s *nv = (influx_db_data_s *) malloc(sizeof(influx_db_data_s));
-    if (nv != null) {
-        nv->measurement = name;
-        nv->data = val;
-        nv->data_type = type;
-    }
+influx_db_data_s new_measurement(char name[], influx_db_mesurement_value_u val, FIELD_VALUES_TYPES_E type) {
+    influx_db_data_s nv;
+    strncpy(nv.measurement, name, strlen(name));
+    nv.data = val;
+    nv.data_type = type;
     return nv;
 }
 
 int influx_db_init() {
     db_post = (influxdb_post_s *) malloc(sizeof(influxdb_post_s));
-    if (db_post != null) {
-        db_post->auth.pass = DB_PASS;
-        db_post->auth.user = DB_USER;
+    if (db_post != NULL) {
+        strncpy(db_post->auth.pass, DB_PASS, strlen(DB_PASS));
+        strncpy(db_post->auth.user, DB_USER, strlen(DB_USER));
         db_post->data_length = 0;
         return 0;
     }
@@ -32,67 +36,73 @@ int influx_db_init() {
 
 }
 
-char *build_post_binary(influxdb_post_s *data) {
+char *build_post_binary() {
     char str[DB_MAX_POST_LENGHT];
     char *retdata;
-    if ((data != null) && (db_post != null)) {
+    if (db_post != NULL) {
         for (int i = 0; i < db_post->data_length; i++) {
-            sprintf(str, "%s,value=", db_post->data[i]->measurement);
-            switch(db_post->data[i]->data_type){
+            sprintf(str, "%s,value=", db_post->data[i].measurement);
+            switch (db_post->data[i].data_type) {
                 case FLOAT:
-                    sprintf(str, "%s%f\n", db_post->data[i]->data.f);
+                    sprintf(str, "%s%f\n", str, db_post->data[i].data.f);
                     break;
                 case INTEGER:
-                    sprintf(str, "%s%d\n", db_post->data[i]->data.i);
+                    sprintf(str, "%s%d\n", str, db_post->data[i].data.i);
                     break;
                 case BOOLEAN:
-                    sprintf(str, "%s%s\n", BOOL_TO_STR(db_post->data[i]->data.b));
+                    sprintf(str, "%s%s\n", str, BOOL_TO_STR(db_post->data[i].data.b));
                     break;
             }
-            sprintf(str, str, db_post->data[i]->data);
         }
         retdata = (char *) malloc(sizeof(char) * strlen(str));
-        if (retdata != null) {
+        if (retdata != NULL) {
             memcpy(retdata, str, strlen(str));
         }
         return retdata;
     }
-    return null;
+    return NULL;
 }
 
-char *build_post_address(influx_post_s *data) {
+/*char *build_post_address() {
     char str[DB_MAX_ADDR_LENGHT];
     char *retdata;
-    if ((data != null) && (db_post != null)) {
-        sprintf(str, "%s/write?db=%s&u=%s&p=%s", DB_ADDRESS, data->database, data->auth.user, data->auth.pass);
+    if (db_post != NULL) {
+        sprintf(str, "%s/write?db=%s&u=%s&p=%s", DB_ADDRESS, db_post->database, db_post->auth.user, db_post->auth.pass);
         retdata = (char *) malloc(sizeof(char) * strlen(str));
-        strcpy(retdata, str, strlent(str));
+        strncpy(retdata, str, strlen(retdata));
         return retdata;
     }
-    return null;
+    return NULL;
+}*/
+char *build_post_address() {
+    return DB_ADDRESS;
 }
 
-int add_measurement(influx_db_data_s *toadd) {
-    if ((toadd != null) && (db_post != null)) {
-        influx_db_data_s[db_post->data_length] = toadd;
+int add_measurement(influx_db_data_s toadd) {
+    ESP_LOGI(TAG, "Adding measurement data <%s>(%d):<%f>", toadd.measurement, toadd.data_type, toadd.data.f);
+        db_post->data[db_post->data_length] = toadd;
         db_post->data_length++;
         return 0;
-    }
-    return -1;
 }
 
-int free_post_data() {
+void free_post_data() {
     int reterr = 0;
-    if (db_post != null) {
-        for (int i = 0; i < db_post->data; i++) {
-            if (db_post->data[i] != null) {
-                reterr -= free(db_post->data[i]);
-            } else {
-                reterr -= 1;
-            }
-        }
+    ESP_LOGI(TAG, "Freeing data, lenght %d", db_post->data_length);
+    if (db_post != NULL) {
         db_post->data_length = 0;
-        return reterr;
+    }else{
+    ESP_LOGE(TAG, "Error freeing data");
     }
-    return -1;
+}
+
+char *get_header_db() {
+    return db_post->database;
+}
+
+char *get_header_user() {
+    return db_post->auth.user;
+}
+
+char *get_header_pass() {
+    return db_post->auth.pass;
 }

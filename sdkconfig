@@ -84,10 +84,7 @@ CONFIG_MONITOR_BAUD=115200
 #
 # Zeldy configurations 
 #
-CONFIG_WIFI_SSID="heel"
-CONFIG_WIFI_PASSWORD="mypassword"
-CONFIG_DB_USER="user"
-CONFIG_DB_PASS="pass"
+CONFIG_QUEUE_SIZE=10
 
 #
 # Partition Table

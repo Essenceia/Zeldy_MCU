@@ -3,7 +3,7 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := esp-http-client-example
+PROJECT_NAME := Zeldy
 
 include $(IDF_PATH)/make/project.mk
 
