@@ -1,0 +1,21 @@
+version: '3'
+services:
+  grafana:
+    image: 'grafana/grafana:latest'
+    ports:
+      - '3000:3000'
+    env_file:
+      - 'grafana-variables.env'
+    volumes:
+      - '/var/lib/grafana'
+    restart: 'always'
+    
+  influxdb:
+    image: 'influxdb:latest'
+    ports:
+      - '8086:8086'
+    env_file:
+      - 'influxdb-variables.env'
+    volumes:
+      - '/var/lib/influxdb'
+    restart: 'always'
