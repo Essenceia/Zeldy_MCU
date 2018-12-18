@@ -1,0 +1,3 @@
+[submodule "Zeldy_MCU"]
+	path = Zeldy_MCU
+	url = https://github.com/Essenceia/Zeldy_MCU.git
