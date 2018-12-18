@@ -5,6 +5,7 @@
 #ifndef ESP_HTTP_CLIENT_EXAMPLE_ADC_H
 #define ESP_HTTP_CLIENT_EXAMPLE_ADC_H
 
+#include <stdint.h>
 void setup_adc();
 void close_adc();
 uint32_t get_ADC();

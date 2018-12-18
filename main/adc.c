@@ -38,13 +38,14 @@ uint32_t read_voltage(){
     esp_adc_cal_characteristics_t *adc_chars = calloc(1, sizeof(esp_adc_cal_characteristics_t));
     esp_adc_cal_value_t val_type = esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_0, ADC_WIDTH_BIT_12, DEFAULT_VREF, adc_chars);
     //Check type of calibration value used to characterize ADC
+    /*
     if (val_type == ESP_ADC_CAL_VAL_EFUSE_VREF) {
         ESP_LOGI(TAG, "eFuse Vref");
     } else if (val_type == ESP_ADC_CAL_VAL_EFUSE_TP) {
         ESP_LOGI(TAG,"Two Point");
     } else {
         ESP_LOGI(TAG,"Default");
-    }
+    }*/
 
     reading = get_ADC();
    voltage =  esp_adc_cal_raw_to_voltage(reading,adc_chars );

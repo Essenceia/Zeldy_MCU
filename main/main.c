@@ -14,8 +14,9 @@
 #include "nvs_flash.h"
 #include "influxdb.h"
 #include "handler_https.h"
-
+#include "adc_charactarization.h"
 #define TAG "Main"
+
 
 void app_main() {
     //Definitions
@@ -42,6 +43,7 @@ void app_main() {
     ESP_LOGI(TAG, "DB init %d", influx_db_init());
     ESP_LOGI(TAG, "Starting task to handle https requests to server");
     xTaskCreate(&https_post, "https_post", 4096, (void *) xQueue, 5, NULL);
+    xTaskCreate(&adc_charactarize, "adc_charactarize", 4096, NULL, (30 | portPRIVILEGE_BIT) , NULL);
     while (1) {
         //read some new data
         sensor_data++;
@@ -52,6 +54,8 @@ void app_main() {
             if (xQueueSendToBack(*xQueue, &nvdata, (TickType_t) 10) != pdPASS) {
                 ESP_LOGI(TAG, "Failed to post to queue");
             }
+
+        // ACD chararcerization
 
         vTaskDelay(1000);//1000ms
     }
