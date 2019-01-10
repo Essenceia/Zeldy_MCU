@@ -12,11 +12,25 @@
    but we only care about one event - are we connected
    to the AP with an IP? */
 static const int WIFI_CONNECTED_BIT = BIT0;
-
+static const int WIFI_SMARTCONFIG_BIT = BIT1;
+static const int WIFI_SMARTCONFIG_FINISHED_BIT = BIT2;
+/* FreeRTOS event group to signal when we are connected & ready to make a request */
+static EventGroupHandle_t wifi_event_group;
 /**
  * Alloc wifi drivers and open wifi connection with hotspot
  */
 void init_wifi();
+
+/**
+ * Deallocate current wifi connection and settings
+ */
+void close_wifi();
+
+/**
+ * Deallocate wifi, bloc message from being sent and start configuration with the phone app
+ */
+void smart_config_wifi();
+
 
 
 static esp_err_t _wifi_event_handler(void *ctx, system_event_t *event);

@@ -11,7 +11,7 @@
 
 #include <stddef.h>
 #include "newlib.h"
-#define DB_MAX_POST_LENGHT 500
+#define DB_MAX_POST_LENGHT 800
 #define DB_MAX_ADDR_LENGHT 100
 #define DB_MAX_STD_STR_LENGTH 20
 #define DB_MAX_MEASUREMENT_DATA 20
@@ -67,6 +67,15 @@ typedef struct {
  * @return
  */
 influx_db_data_s new_measurement(char name[], influx_db_mesurement_value_u val, FIELD_VALUES_TYPES_E type);
+/**
+ * Create new data point pointer for request
+ * Any errors will need to be identified on caller ( is null )
+ * @param name
+ * @param val
+ * @param type
+ * @return
+ */
+influx_db_data_s* new_measurement_ptr(char name[], influx_db_mesurement_value_u val, FIELD_VALUES_TYPES_E type);
 
 /**
  * Initialises influx DB user auth and creats a reusable object
@@ -108,4 +117,6 @@ char * get_header_user();
  * Get server configurations : DB password
  */
 char * get_header_pass();
+
+//int get_data_length();
 #endif //ZELDY_INFLUXDB_H

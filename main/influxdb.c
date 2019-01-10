@@ -15,6 +15,7 @@
  * Persistent hidden object for post requests
  */
 static influxdb_post_s *db_post;
+//static int length;
 
 influx_db_data_s new_measurement(char name[], influx_db_mesurement_value_u val, FIELD_VALUES_TYPES_E type) {
     influx_db_data_s nv;
@@ -24,11 +25,39 @@ influx_db_data_s new_measurement(char name[], influx_db_mesurement_value_u val, 
     return nv;
 }
 
+influx_db_data_s *new_measurement_ptr(char name[], influx_db_mesurement_value_u val, FIELD_VALUES_TYPES_E type) {
+    influx_db_data_s *nv;
+    nv = (influx_db_data_s *) malloc(sizeof(influx_db_data_s));
+    if (nv != NULL) {
+        strncpy(nv->measurement, name, strlen(name));
+        memset(name, 0, strlen(name));
+        memcpy(&(nv->data), &val, sizeof(influx_db_mesurement_value_u));
+        nv->data_type = type;
+    }
+    return nv;
+}
+
 int influx_db_init() {
+    size_t str_l;
     db_post = (influxdb_post_s *) malloc(sizeof(influxdb_post_s));
     if (db_post != NULL) {
-        strncpy(db_post->auth.pass, DB_PASS, strlen(DB_PASS));
-        strncpy(db_post->auth.user, DB_USER, strlen(DB_USER));
+
+        str_l = strlen(DB_PASS);
+        str_l = (DB_MAX_STD_STR_LENGTH > str_l) ? str_l : DB_MAX_STD_STR_LENGTH;
+        strncpy(db_post->auth.pass, DB_PASS, str_l);
+        db_post->auth.pass[strlen(DB_PASS)] = '\0';
+
+
+        str_l = strlen(DB_USER);
+        str_l = (DB_MAX_STD_STR_LENGTH > str_l) ? str_l : DB_MAX_STD_STR_LENGTH;
+        strncpy(db_post->auth.user, DB_USER, str_l);
+        db_post->auth.user[str_l] = '\0';
+
+        str_l = strlen(DB_NAME);
+        str_l = (DB_MAX_STD_STR_LENGTH > str_l) ? str_l : DB_MAX_STD_STR_LENGTH;
+        strncpy(db_post->database, DB_NAME, str_l);
+        db_post->database[str_l] = '\0';
+
         db_post->data_length = 0;
         return 0;
     }
@@ -37,11 +66,14 @@ int influx_db_init() {
 }
 
 char *build_post_binary() {
-    char str[DB_MAX_POST_LENGHT];
+    char str[DB_MAX_POST_LENGHT] = {0};
     char *retdata;
+    int len;
+    str[0]='\0';
     if (db_post != NULL) {
         for (int i = 0; i < db_post->data_length; i++) {
-            sprintf(str, "%s,value=", db_post->data[i].measurement);
+
+            sprintf(str, "%s%s,host=server01,region=us-west value=",str,db_post->data[i].measurement);
             switch (db_post->data[i].data_type) {
                 case FLOAT:
                     sprintf(str, "%s%f\n", str, db_post->data[i].data.f);
@@ -54,16 +86,23 @@ char *build_post_binary() {
                     break;
             }
         }
-        retdata = (char *) malloc(sizeof(char) * strlen(str));
+        len = strlen(str);
+        retdata = (char *) malloc(sizeof(char) * len );
         if (retdata != NULL) {
-            memcpy(retdata, str, strlen(str));
+            memcpy(retdata, str, len);
+            retdata[len-1] = '\0';
         }
+        ESP_LOGI(TAG, "Length of data %d", len);
+        //length =len;
         return retdata;
     }
     return NULL;
 }
-
-/*char *build_post_address() {
+/*
+int get_data_length(){
+    return length;
+}
+char *build_post_address() {
     char str[DB_MAX_ADDR_LENGHT];
     char *retdata;
     if (db_post != NULL) {
@@ -75,14 +114,14 @@ char *build_post_binary() {
     return NULL;
 }*/
 char *build_post_address() {
-    return DB_ADDRESS;
+    return DB_WRITE_ADDRESS;
 }
 
 int add_measurement(influx_db_data_s toadd) {
     ESP_LOGI(TAG, "Adding measurement data <%s>(%d):<%f>", toadd.measurement, toadd.data_type, toadd.data.f);
-        db_post->data[db_post->data_length] = toadd;
-        db_post->data_length++;
-        return 0;
+    db_post->data[db_post->data_length] = toadd;
+    db_post->data_length++;
+    return 0;
 }
 
 void free_post_data() {
@@ -90,8 +129,8 @@ void free_post_data() {
     ESP_LOGI(TAG, "Freeing data, lenght %d", db_post->data_length);
     if (db_post != NULL) {
         db_post->data_length = 0;
-    }else{
-    ESP_LOGE(TAG, "Error freeing data");
+    } else {
+        ESP_LOGE(TAG, "Error freeing data");
     }
 }
 
