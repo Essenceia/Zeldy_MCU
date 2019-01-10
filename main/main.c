@@ -93,8 +93,8 @@ void fnComputeRMS(QueueHandle_t *queueHandle) {
     ESP_LOGI("ComputeRMS::", "Computing for iNbMeas=%d", iNbMeas);
 #endif
     for (int i = 0; i < iNbMeas; i++) {
-        float tempV = fnADC2Voltage(piADCVoltageRead[i]);
-        float tempI = fnADC2Current(piADCCurrentRead[i]);
+        float tempV = fnADC2Voltage(piADCVoltageRead[i%1000]);
+        float tempI = fnADC2Current(piADCCurrentRead[i%1000]);
         fMeanActivePower += tempV * tempI;
         fVoltageRMS += tempV * tempV;
         fCurrentRMS += tempI * tempI;
@@ -210,18 +210,12 @@ static void IRAM_ATTR ISRZCVoltage(void *args) {
 
 static void ISRTimer(void *stuff) {
     BaseType_t xHigherPriorityTaskWoken;
-#ifdef DEBUG
-    ESP_LOGI("ISR Timer::", "called");
-#endif
+
     xHigherPriorityTaskWoken = pdFALSE;
     xEventGroupSetBitsFromISR(
             EventGroup,   /* The event group being updated. */
             FLAG_iTimer, /* The bits being set. */
             &xHigherPriorityTaskWoken);
-
-#ifdef DEBUG
-    ESP_LOGI("ISR Timer::", "exit");
-#endif
 }
 
 
@@ -268,8 +262,10 @@ void fnProcessTimerFlag() {
         ESP_LOGI("Process timer::", "Read ADC voltage returns %d", tmp);
 #endif
         if (tmp >= 0) {
-            piADCVoltageRead[iNbMeas] = tmp;
-            iNbMeas++;
+            piADCVoltageRead[iNbMeas%1000] = tmp;
+           if(iNbMeas<1000){
+               iNbMeas++;
+           }
 #ifdef DEBUG
             ESP_LOGI("Process timer::", "Increment iNbMeas new val %d", iNbMeas);
 #endif
@@ -281,12 +277,14 @@ void fnProcessTimerFlag() {
         ESP_LOGI("Process timer::", "Read ADC current returns %d", tmp);
 #endif
         if (tmp >= 0) {
-            piADCCurrentRead[iCurrentADCPos] = tmp;
+            piADCCurrentRead[iCurrentADCPos%1000] = tmp;
 #ifdef DEBUG
             ESP_LOGI("Process timer::", "Increment iCurrentADCPos new val %d", iCurrentADCPos);
 #endif
+            if(iCurrentADCPos<1000){
+                iCurrentADCPos++;
+            }
 
-            iCurrentADCPos++;
         }
     }
     xEventGroupClearBits(
@@ -383,8 +381,21 @@ void app_main() {
     ESP_ERROR_CHECK(adc1_config_channel_atten(ADC_VOLTAGE, ADC_ATTEN_DB_11));
     ESP_ERROR_CHECK(adc1_config_channel_atten(ADC_CURRENT, ADC_ATTEN_DB_11));
 
+#ifdef DEBUG
+    /** Debug alive GPIO init **/
+    uint32_t debug_gpio_lvl=0;
+    io_conf.pin_bit_mask = GPIO_NUM_2;
+    //set as input mode
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    //disable pull-down mode
+    io_conf.pull_down_en = 0;
+    //disable pull-up mode
+    io_conf.pull_up_en = 0;
+    //configure GPIO with the given settings
+    gpio_config(&io_conf);
 
-
+    ESP_ERROR_CHECK(gpio_config(&io_conf));
+#endif
     /********* Original main *************/
     //Definitions
     QueueHandle_t *xQueue;
@@ -420,11 +431,16 @@ void app_main() {
         if ((uxBits & FLAG_iZCVoltage) != 0) {
 #endif
             fnProcessZCVoltageFlag(xQueue);
+            xEventGroupClearBits(EventGroup, FLAG_iZCVoltage);
+
         } else if ((uxBits & FLAG_iTimer) != 0) {
             fnProcessTimerFlag();
+            xEventGroupClearBits(EventGroup, FLAG_iTimer);
         }
 #ifdef DEBUG
         ESP_LOGI("Main Loop::", "Event has been triggered");
+        gpio_set_level(GPIO_NUM_2, debug_gpio_lvl);
+        debug_gpio_lvl = !debug_gpio_lvl;
 #endif
         //read some new data
         /*sensor_data++;

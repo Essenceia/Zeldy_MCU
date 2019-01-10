@@ -19,6 +19,7 @@ esp_http_client_handle_t *peristant_client;
 void https_post(void *ptr_post_data) {
     ESP_LOGI(TAG, "Launched");
     esp_err_t err;
+    UBaseType_t datalen;
     char *raw_post_data;
     //waist of memory in order to compile with the -Werror=maybe-uninitialized error
     influx_db_data_s recv_data;
@@ -26,6 +27,8 @@ void https_post(void *ptr_post_data) {
     //wait for wifi to have been connected
     while (1) {
         vTaskDelay(1000);// ms
+        datalen = uxQueueMessagesWaiting(*xQueue);
+        ESP_LOGI(TAG, "Gotten %d available data", datalen);
         ESP_LOGI(TAG, "Waiting wifi connected");
         wifi_wait_connected();
         if (peristant_client == NULL) {
@@ -43,15 +46,13 @@ void https_post(void *ptr_post_data) {
         }
 
         //check if we have data to send
-        if ((peristant_client != NULL) && (uxQueueSpacesAvailable(*xQueue) != 10)) {
-            ESP_LOGI(TAG, "Data to be posted available");
+        if ((peristant_client != NULL) && (uxQueueMessagesWaiting(*xQueue) != 0)) {
             //queue is not empty- get data from queue
-            while (uxQueueSpacesAvailable(*xQueue) != 10) {
+            while (uxQueueMessagesWaiting(*xQueue) != 0) {
                 if (xQueueReceive(*xQueue, (void *)&recv_data, 100) == pdTRUE) {
 
                     ESP_LOGI(TAG, "Adding data from queue");
                     add_measurement(recv_data);
-                    //free(recv_data);
 
                 }
 
@@ -82,15 +83,16 @@ void https_post(void *ptr_post_data) {
                 ESP_LOGI(TAG, "Error perform http request %s", esp_err_to_name(err));
             }
             if(raw_post_data!= NULL )free(raw_post_data);
+            free_post_data();
 
         }
 
-        if (peristant_client != NULL) {
+       if (peristant_client != NULL) {
             esp_http_client_cleanup(*peristant_client);
             free(peristant_client);
             peristant_client = NULL;
         }
-        free_post_data();
+
     }
 
 }
