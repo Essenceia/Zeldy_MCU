@@ -1,6 +1,6 @@
 # Zeldy_MCU
 
-Group project SERI Supelec 2018 : Tangy Renaud, Simon Brelivet, Julia Desmazes
+Group project SERI Supelec 2018 : Tangy Renan, Simon Brelivet, Julia Desmazes
 
 This is the main repository from the MCU's code. This code handles the
 aquisition/handeling of the data from the circuit ( see Zeldy_HW ) and
