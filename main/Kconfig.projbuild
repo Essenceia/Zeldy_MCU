@@ -1,7 +1,37 @@
-menu "Zeldy configurations "
+menu "Zeldy configurations"
 
-config QUEUE_SIZE
-    int "Size of the shared queue"
-	default 10
+config USING_SSL
+    bool "Activate use of https with ssl cert"
+
+config DB_NAME
+    string "Name of Database to write into"
+    default "zeldy"
+
+config DB_PASS
+    string "Password on DB for auth"
+    default "sensor_password"
+
+config DB_USER
+    string "Name for user for login on DB"
+    default "sensor"
+
+config DB_ADDRESS
+    string "Address DB server"
+    default "http://192.168.0.1:8086"
+     help
+        Address to reatch the database, don't forget to specify the port number
+
+menu "Debug"
+
+config DEBUG
+    bool "Activate additional debug logs"
+    default n
+
+config PROD
+    bool "[TEST] Activate default values"
+    default y
 
 endmenu
+
+endmenu
+

@@ -82,9 +82,13 @@ CONFIG_MONITOR_BAUD_OTHER_VAL=115200
 CONFIG_MONITOR_BAUD=115200
 
 #
-# Zeldy configurations 
+# Zeldy configurations
 #
-CONFIG_QUEUE_SIZE=10
+CONFIG_USING_SSL=
+CONFIG_DB_NAME="zeldy"
+CONFIG_DB_PASS="sensor_password"
+CONFIG_DB_USER="sensor"
+CONFIG_DB_ADDRESS="http://192.168.0.1:8086"
 
 #
 # Partition Table

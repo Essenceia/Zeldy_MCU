@@ -26,15 +26,17 @@
 #define ADC_CURRENT ADC1_CHANNEL_5
 #define ESP_INTR_FLAG_DEFAULT 0
 // TIMER SETUP
-#define TIMER_PERIODE_US 100 //TODO
-//#define DEBUG
+#define TIMER_PERIODE_US 100000
 
-#define PROD
+/******** User configured flags for CONFIG_DEBUG and testing *********/
+//#define CONFIG_DEBUG
+//#define CONFIG_PROD
+/******* End of user configured flags ***********************/
 
 // ADC setup
 const int iADCVoltageZeroValue = 1826;      //Adjust value of 0V mesured by ADC
 const float fVoltageMultiplier = 0.227014;    //Adjust value
-const int iADCCurrentZeroValue = 2048;      //TODO adjust value
+const int iADCCurrentZeroValue = 1826;      //TODO adjust value
 const float fCurrentMultiplier = 0.015;      //TODO adjust value
 
 
@@ -57,7 +59,7 @@ portMUX_TYPE muxTimerFlag = portMUX_INITIALIZER_UNLOCKED;
 // synchro values
 int iCountZCVoltage = 0;
 int iCurrentADCPos = 0;
-#ifndef PROD
+#ifndef CONFIG_PROD
 int iAction = 2; // 0 read voltage, 1 read current, 2 compute
 #else
 int iAction = 0; // 0 read voltage, 1 read current, 2 compute
@@ -89,12 +91,12 @@ float fnADC2Current(int ADCCurrentValue) {
 void fnComputeRMS(QueueHandle_t *queueHandle) {
     influx_db_mesurement_value_u mval;
     influx_db_data_s nvdata;
-#ifdef DEBUG
+#ifdef CONFIG_DEBUG
     ESP_LOGI("ComputeRMS::", "Computing for iNbMeas=%d", iNbMeas);
 #endif
     for (int i = 0; i < iNbMeas; i++) {
-        float tempV = fnADC2Voltage(piADCVoltageRead[i%1000]);
-        float tempI = fnADC2Current(piADCCurrentRead[i%1000]);
+        float tempV = fnADC2Voltage(piADCVoltageRead[i]);
+        float tempI = fnADC2Current(piADCCurrentRead[i]);
         fMeanActivePower += tempV * tempI;
         fVoltageRMS += tempV * tempV;
         fCurrentRMS += tempI * tempI;
@@ -104,84 +106,54 @@ void fnComputeRMS(QueueHandle_t *queueHandle) {
     fCurrentRMS = sqrt(fCurrentRMS) / iCurrentADCPos;
     fMeanApparentPower = fVoltageRMS * fCurrentRMS;
     fCosPhi = fMeanActivePower / fMeanApparentPower;
-#ifndef PROD
-    if(!isnormal(fMeanActivePower))fMeanActivePower = 2.546;
-    if(!isnormal(fVoltageRMS))fVoltageRMS= 15.0;
-    if(!isnormal(fCurrentRMS))fCurrentRMS = 20.0;
-    if(!isnormal(fMeanApparentPower))fMeanApparentPower = 2.008;
+#ifndef CONFIG_PROD
+    //send default values if code is not in CONFIG_PRODuction
     if(!isnormal(fCosPhi))fCosPhi = 10.0;
+    if(!isnormal(fVoltageRMS))fVoltageRMS= 15.0;
+    if(!isnormal(fCurrentRMS))fCurrentRMS = 1.502;
 #endif
 
-#ifdef DEBUG
+#ifdef CONFIG_DEBUG
     ESP_LOGI("ComputeRMS::", "Results CosPhi=%f fCurrentRMS=%f fVoltageRMS=%f data to queue", fCosPhi, fCurrentRMS, fVoltageRMS);
     ESP_LOGI("ComputeRMS::", "Checking space in queue");
     ESP_LOGI("ComputeRMS::", "Gotten %d space in queue",uxQueueSpacesAvailable(*queueHandle));
 #endif
-    if((uxQueueSpacesAvailable(*queueHandle)>0)&& isnormal(fMeanActivePower)) {
+    if(uxQueueSpacesAvailable(*queueHandle)>0) {
         //adding information to be sent to database
         mval.f = fMeanActivePower;
-        nvdata = new_measurement("mean_active_power\0", mval, FLOAT);
-#ifdef DEBUG
-        ESP_LOGI("ComputeRMS::", "Sending data 0.1");
+        nvdata = new_measurement("mean_active_power",17, mval, FLOAT);
+#ifdef CONFIG_DEBUG
+        ESP_LOGI("ComputeRMS::", "Sending data 0");
 #endif
         if (xQueueSendToBack(*queueHandle, (void * ) &nvdata, (TickType_t) 5) != pdPASS) {
-#ifdef DEBUG
+#ifdef CONFIG_DEBUG
             ESP_LOGI(TAG, "Failed to post to queue");
 #endif
         }
 
     }
-    if((uxQueueSpacesAvailable(*queueHandle)>0)&& isnormal(fMeanApparentPower)) {
-        //adding information to be sent to database
-        mval.f = fMeanApparentPower;
-        nvdata = new_measurement("mean_appearent_power\0", mval, FLOAT);
-#ifdef DEBUG
-        ESP_LOGI("ComputeRMS::", "Sending data 0.0");
-#endif
-        if (xQueueSendToBack(*queueHandle, (void * ) &nvdata, (TickType_t) 5) != pdPASS) {
-#ifdef DEBUG
-            ESP_LOGI(TAG, "Failed to post to queue");
-#endif
-        }
-
-    }
-    if((uxQueueSpacesAvailable(*queueHandle)>0)&& isnormal(fVoltageRMS)) {
+   if(uxQueueSpacesAvailable(*queueHandle)>0) {
         //adding information to be sent to database
         mval.f = fVoltageRMS;
-        nvdata = new_measurement("voltage_rms\0", mval, FLOAT);
-#ifdef DEBUG
-        ESP_LOGI("ComputeRMS::", "Sending data 1.1");
+        nvdata = new_measurement("voltage_rms", 11,mval, FLOAT);
+#ifdef CONFIG_DEBUG
+        ESP_LOGI("ComputeRMS::", "Sending data 1");
 #endif
         if (xQueueSendToBack(*queueHandle,(void * ) & nvdata, (TickType_t) 5) != pdPASS) {
-#ifdef DEBUG
+#ifdef CONFIG_DEBUG
             ESP_LOGI(TAG, "Failed to post to queue");
 #endif
         }
     }
-
-    if((uxQueueSpacesAvailable(*queueHandle)>0)&& isnormal(fCurrentRMS)) {
+   if(uxQueueSpacesAvailable(*queueHandle)>0) {
         //adding information to be sent to database
         mval.f = fCurrentRMS;
-        nvdata = new_measurement("current_rms\0", mval, FLOAT);
-#ifdef DEBUG
-        ESP_LOGI("ComputeRMS::", "Sending data 1.2");
-#endif
-        if (xQueueSendToBack(*queueHandle,(void * ) & nvdata, (TickType_t) 5) != pdPASS) {
-#ifdef DEBUG
-            ESP_LOGI(TAG, "Failed to post to queue");
-#endif
-        }
-    }
-
-    if((uxQueueSpacesAvailable(*queueHandle)>0)&& isnormal(fCosPhi)) {
-        //adding information to be sent to database
-        mval.f = fCosPhi;
-        nvdata = new_measurement("cos_phi\0", mval, FLOAT);
-#ifdef DEBUG
+        nvdata = new_measurement("fCurrentRMS", 11, mval, FLOAT);
+#ifdef CONFIG_DEBUG
         ESP_LOGI("ComputeRMS::", "Sending data 2");
 #endif
         if (xQueueSendToBack(*queueHandle,(void * ) & nvdata, (TickType_t) 5) != pdPASS) {
-#ifdef DEBUG
+#ifdef CONFIG_DEBUG
             ESP_LOGI(TAG, "Failed to post to queue");
 #endif
         }
@@ -216,6 +188,7 @@ static void ISRTimer(void *stuff) {
             EventGroup,   /* The event group being updated. */
             FLAG_iTimer, /* The bits being set. */
             &xHigherPriorityTaskWoken);
+
 }
 
 
@@ -228,7 +201,7 @@ void fnProcessZCVoltageFlag(QueueHandle_t *queueHandle) {
 
     }
 
-#ifdef DEBUG
+#ifdef CONFIG_DEBUG
     ESP_LOGI("Process ZC Voltage::", "iCountZCVoltage %d, iAction %d", iCountZCVoltage, iAction);
 #endif
     if (iAction == 2) {
@@ -252,39 +225,35 @@ void fnProcessZCVoltageFlag(QueueHandle_t *queueHandle) {
 }
 
 void fnProcessTimerFlag() {
-#ifdef DEBUG
+#ifdef CONFIG_DEBUG
     ESP_LOGI("Process timer::", "Process timer called action %d", iAction);
 #endif
     int tmp;
     if (iAction == 0) {
         tmp = adc1_get_raw(ADC_VOLTAGE);
-#ifdef DEBUG
+#ifdef CONFIG_DEBUG
         ESP_LOGI("Process timer::", "Read ADC voltage returns %d", tmp);
 #endif
         if (tmp >= 0) {
-            piADCVoltageRead[iNbMeas%1000] = tmp;
-           if(iNbMeas<1000){
-               iNbMeas++;
-           }
-#ifdef DEBUG
+            piADCVoltageRead[iNbMeas] = tmp;
+            iNbMeas++;
+#ifdef CONFIG_DEBUG
             ESP_LOGI("Process timer::", "Increment iNbMeas new val %d", iNbMeas);
 #endif
         }
     }
     if (iAction == 1) {
         tmp = adc1_get_raw(ADC_CURRENT);
-#ifdef DEBUG
+#ifdef CONFIG_DEBUG
         ESP_LOGI("Process timer::", "Read ADC current returns %d", tmp);
 #endif
         if (tmp >= 0) {
-            piADCCurrentRead[iCurrentADCPos%1000] = tmp;
-#ifdef DEBUG
+            piADCCurrentRead[iCurrentADCPos] = tmp;
+#ifdef CONFIG_DEBUG
             ESP_LOGI("Process timer::", "Increment iCurrentADCPos new val %d", iCurrentADCPos);
 #endif
-            if(iCurrentADCPos<1000){
-                iCurrentADCPos++;
-            }
 
+            iCurrentADCPos++;
         }
     }
     xEventGroupClearBits(
@@ -344,7 +313,9 @@ void app_main() {
     //enable pull-up mode
     io_conf.pull_up_en = 1;
     ESP_ERROR_CHECK(gpio_config(&io_conf));
-
+#ifdef CONFIG_DEBUG
+    ESP_LOGI("Main::", "3");
+#endif
     gpio_pad_select_gpio(GPIO_NUM_5);
     // ESP_ERROR_CHECK(gpio_set_direction(GPIO_NUM_5, GPIO_MODE_INPUT));
     //ESP_ERROR_CHECK(gpio_set_pull_mode(GPIO_NUM_5, GPIO_PULLUP_ONLY));
@@ -363,14 +334,16 @@ void app_main() {
 // timer setting
     const esp_timer_create_args_t periodic_timer_args = {
             .callback = &ISRTimer,
-            /* name is optional, but may help identify the timer when debugging */
+            /* name is optional, but may help identify the timer when CONFIG_DEBUGging */
             .name = "periodic timer"
     };
     ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));
     ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer, TIMER_PERIODE_US));
 
-
-    piADCVoltageRead = malloc(1000 * sizeof(int));
+#ifdef CONFIG_DEBUG
+    ESP_LOGI("Main::", "0");
+#endif
+     piADCVoltageRead = malloc(1000 * sizeof(int));
     piADCCurrentRead = malloc(1000 * sizeof(int));
 
 
@@ -381,21 +354,10 @@ void app_main() {
     ESP_ERROR_CHECK(adc1_config_channel_atten(ADC_VOLTAGE, ADC_ATTEN_DB_11));
     ESP_ERROR_CHECK(adc1_config_channel_atten(ADC_CURRENT, ADC_ATTEN_DB_11));
 
-#ifdef DEBUG
-    /** Debug alive GPIO init **/
-    uint32_t debug_gpio_lvl=0;
-    io_conf.pin_bit_mask = GPIO_NUM_2;
-    //set as input mode
-    io_conf.mode = GPIO_MODE_OUTPUT;
-    //disable pull-down mode
-    io_conf.pull_down_en = 0;
-    //disable pull-up mode
-    io_conf.pull_up_en = 0;
-    //configure GPIO with the given settings
-    gpio_config(&io_conf);
-
-    ESP_ERROR_CHECK(gpio_config(&io_conf));
+#ifdef CONFIG_DEBUG
+    ESP_LOGI("Main::", "1);
 #endif
+
     /********* Original main *************/
     //Definitions
     QueueHandle_t *xQueue;
@@ -424,23 +386,18 @@ void app_main() {
                 pdFALSE,        /* Flag bits should not be cleared before returning. */
                 pdFALSE,       /* Don't wait for both bits, either bit will do. */
                 portMAX_DELAY);/* Wait a maximum */
-#ifndef PROD
+#ifndef CONFIG_PROD
         if ((uxBits & FLAG_iZCVoltage) == 0) {
 #else
 
         if ((uxBits & FLAG_iZCVoltage) != 0) {
 #endif
             fnProcessZCVoltageFlag(xQueue);
-            xEventGroupClearBits(EventGroup, FLAG_iZCVoltage);
-
         } else if ((uxBits & FLAG_iTimer) != 0) {
             fnProcessTimerFlag();
-            xEventGroupClearBits(EventGroup, FLAG_iTimer);
         }
-#ifdef DEBUG
+#ifdef CONFIG_DEBUG
         ESP_LOGI("Main Loop::", "Event has been triggered");
-        gpio_set_level(GPIO_NUM_2, debug_gpio_lvl);
-        debug_gpio_lvl = !debug_gpio_lvl;
 #endif
         //read some new data
         /*sensor_data++;
@@ -455,3 +412,4 @@ void app_main() {
     }
 
 }
+

@@ -17,9 +17,9 @@
 static influxdb_post_s *db_post;
 //static int length;
 
-influx_db_data_s new_measurement(char name[], influx_db_mesurement_value_u val, FIELD_VALUES_TYPES_E type) {
+influx_db_data_s new_measurement(char name[],int len ,  influx_db_mesurement_value_u val, FIELD_VALUES_TYPES_E type) {
     influx_db_data_s nv;
-    strncpy(nv.measurement, name, strlen(name));
+    strncpy(nv.measurement, name, len);
     nv.data = val;
     nv.data_type = type;
     return nv;
@@ -69,7 +69,6 @@ char *build_post_binary() {
     char str[DB_MAX_POST_LENGHT] = {0};
     char *retdata;
     int len;
-    str[0]='\0';
     if (db_post != NULL) {
         for (int i = 0; i < db_post->data_length; i++) {
 
@@ -87,10 +86,11 @@ char *build_post_binary() {
             }
         }
         len = strlen(str);
-        retdata = (char *) malloc(sizeof(char) * len );
+        retdata = (char *) malloc(sizeof(char) * len +1);
         if (retdata != NULL) {
             memcpy(retdata, str, len);
-            retdata[len-1] = '\0';
+            //retdata[len-1] = '';
+             retdata[len] = '\0';
         }
         ESP_LOGI(TAG, "Length of data %d", len);
         //length =len;

@@ -12,7 +12,7 @@
 #include "config_ssl.h"
 #define TAG "HTTP_HANDLER"
 
-#define USING_SSL
+
 
 esp_http_client_handle_t *peristant_client;
 
@@ -35,7 +35,7 @@ void https_post(void *ptr_post_data) {
             esp_http_client_config_t config = {
                     .url = build_post_address(),
                     .event_handler = _http_event_handler,
-#ifdef USING_SSL
+#ifdef CONFIG_USING_SSL
                     .cert_pem = ssl_com_root_cert_pem_start,
 #endif
                     .max_redirection_count=20,
@@ -68,7 +68,7 @@ void https_post(void *ptr_post_data) {
             ESP_LOGI(TAG,"End of data body");
             ESP_LOGI(TAG, "length %d", strlen(raw_post_data));
             ESP_LOGI(TAG,"Posting");
-            err = esp_http_client_set_post_field(*peristant_client, raw_post_data, strlen(raw_post_data));
+            err = esp_http_client_set_post_field(*peristant_client, raw_post_data, strlen(raw_post_data)-1);
             if (err != ESP_OK) {
                 ESP_LOGI(TAG, "Post body set failed ");
             }

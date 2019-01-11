@@ -66,7 +66,7 @@ typedef struct {
  * @param type
  * @return
  */
-influx_db_data_s new_measurement(char name[], influx_db_mesurement_value_u val, FIELD_VALUES_TYPES_E type);
+influx_db_data_s new_measurement(char name[],int len ,  influx_db_mesurement_value_u val, FIELD_VALUES_TYPES_E type);
 /**
  * Create new data point pointer for request
  * Any errors will need to be identified on caller ( is null )
