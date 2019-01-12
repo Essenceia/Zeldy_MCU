@@ -2,6 +2,13 @@ menu "Zeldy configurations"
 
 config USING_SSL
     bool "Activate use of https with ssl cert"
+config WIFI_SSID
+    string "Name of wifi network to connect to"
+    default "wifi_name"
+
+config WIFI_PASSWORD
+    string "Password to connect to wifi"
+    default "wifi_password"
 
 config DB_NAME
     string "Name of Database to write into"

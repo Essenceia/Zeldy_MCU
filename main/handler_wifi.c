@@ -7,7 +7,6 @@
 #include "esp_wifi.h"
 #include "esp_event_loop.h"
 #include "esp_log.h"
-#include "config_wifi.h"
 #define USING_SSL
 
 static const char *TAG = "WIFI";
